@@ -3,6 +3,7 @@
 use App\Http\Controllers\AppController;
 use App\Http\Controllers\GrantedWishController;
 use App\Http\Controllers\PartyController;
+use App\Http\Controllers\PartyViewerController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SortWishlistController;
 use App\Http\Controllers\WishController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Guest\GuestWishController;
 use App\Http\Controllers\Guest\GuestWishlistController;
 use App\Http\Controllers\Guest\GuestSortWishlistController;
 use App\Models\Wishlist;
+use App\Models\Party;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
@@ -21,6 +23,9 @@ Route::get('/', function () {
 })->name('welcome');
 
 Route::view('/affiliates', 'markdown', ['slot' => Str::markdown(file_get_contents(resource_path('markdown/affiliates.md')))]);
+
+Route::get('/parties/{party:invite_code}/join', [PartyViewerController::class, 'create'])->name('parties.viewers.create');
+Route::post('/parties/{party:invite_code}/join', [PartyViewerController::class, 'store'])->name('parties.viewers.store')->middleware('auth');
 
 Route::get('/wishlists/{wishlist:invite_code}/join', [WishlistViewerController::class, 'create'])->name('wishlists.viewers.create');
 Route::post('/wishlists/{wishlist:invite_code}/join', [WishlistViewerController::class, 'store'])->name('wishlists.viewers.store')->middleware('auth');
@@ -36,9 +41,12 @@ Route::middleware('auth')->prefix('/app')->group(function () {
     Route::get('/', AppController::class)->name('app');
     
     Route::get('/parties', [PartyController::class, 'index'])->name('parties.index');
-    Route::get('/parties/create', [PartyController::class, 'create'])->name('parties.create');//->can('create', Party::class); // @TODO can't figure out why unauthorized
+    Route::get('/parties/create', [PartyController::class, 'create'])->name('parties.create')->can('create', Party::class);
+    Route::get('/parties/{party}', [PartyController::class, 'show'])->name('parties.show')->can('view', 'party');
     Route::post('/parties', [PartyController::class, 'store'])->name('parties.store')->can('create', Party::class);
     Route::get('/parties/{party}', [PartyController::class, 'show'])->name('parties.show')->can('view', 'party');
+    
+    Route::delete('/parties/{party}/users/{user}', [PartyViewerController::class, 'destroy'])->name('parties.viewers.destroy');//->can('kick', ['party', 'user']);
     
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
