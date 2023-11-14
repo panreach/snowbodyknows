@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Party;
 use App\Models\User;
 use App\Models\Wishlist;
 use App\Providers\RouteServiceProvider;
@@ -24,6 +25,7 @@ class RegisteredUserController extends Controller
     {
         return view('auth.register', [
             'wishlist' => $request->query('wishlist'),
+            'party' => $request->query('party')
         ]);
     }
 
@@ -46,9 +48,18 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        $newWishlist = $user->wishlists()->create([
-            'name' => __(':user’s Wishlist', ['user' => Str::before($user->name, ' ')]),
-        ]);
+        if ($request->query('party')) {
+            $p = Party::where('invite_code', $request->query('party'))->firstOrFail();
+            $newWishlist = $user->wishlists()->create([
+                'name' => __(':user’s Wishlist for :party', ['user' => Str::before($user->name, ' '), 'party' => $p->name]),
+                'party_id' => $p->id,
+            ]);
+        }
+        else {
+            $newWishlist = $user->wishlists()->create([
+                'name' => __(':user’s Wishlist', ['user' => Str::before($user->name, ' ')]),
+            ]);
+        }
 
         if (session('wishlist')) {
             foreach (session('wishlist')['wishes'] as $wish) {
@@ -66,9 +77,13 @@ class RegisteredUserController extends Controller
         Auth::login($user);
 
         $invitecode = $request->query('wishlist');
-        if($wishlist = Wishlist::findByInviteCode($invitecode)){  
-            $wishlist->viewers()->syncWithoutDetaching($user);   
+        if($wishlist = Wishlist::findByInviteCode($invitecode)){
+            $wishlist->viewers()->syncWithoutDetaching($user);
             return to_route('wishlists.show', $wishlist);
+        }
+
+        if ($party = $request->query('party')) {
+            return to_route('parties.participants.create', $party);
         }
 
         return redirect(RouteServiceProvider::HOME);
