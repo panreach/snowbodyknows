@@ -14,7 +14,7 @@
     </a>
 </div>
 <div class="mt-6 text-center w-full">
-    <x-button-primary href="{{ route('register') }}">{{ __('Register') }}</x-button-primary>
+    <x-button-primary href="{{ route('choose-adventure') }}">{{ __('Register') }}</x-button-primary>
     <x-button-secondary href="{{ route('login') }}">{{ __('Login') }}</x-button-secondary>
 </div>
 </x-layout>
