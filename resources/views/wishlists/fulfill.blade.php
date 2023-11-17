@@ -98,6 +98,7 @@
         </div>
     </x-section>
 
+    @if (!$wishlist->party)
     <section class="pt-4 sm:pt-8 text-center">
         <h2 class="sr-only text-lg font-medium text-gray-900">
             {{ __('Leave :wishlist Wishlist', ['wishlist' => $wishlist->name]) }}
@@ -106,5 +107,6 @@
             <button class="underline text-gray-600 text-sm">{{ __('Leave this wishlist') }}</button>
         </x-form>
     </section>
+    @endif
 </div>
 </x-layout.app>
