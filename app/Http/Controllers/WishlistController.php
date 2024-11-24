@@ -10,9 +10,8 @@ class WishlistController extends Controller
     public function index(Request $request)
     {
         return view('wishlists.index', [
-            'wishlists' => $request->user()->wishlists()->withCount('wishes', 'viewers')->get(),
-            'joinedWishlists' => $request->user()->joinedWishlists()->withCount('wishes', 'viewers')->get(),
-            'joinedParties' => $request->user()->joinedParties()->get()//->withCount('wishes', 'participants')->get(),
+            'wishlists' => $request->user()->wishlists()->withCount('wishes', 'groups')->get(),
+            'groups' => $request->user()->groups()->withCount('users')->get(),
         ]);
     }
 
@@ -38,12 +37,15 @@ class WishlistController extends Controller
             return view('wishlists.fulfill', [
                 'wishlist' => $wishlist,
                 'wishes' => $wishlist->wishes()->with('granter')->orderBy('granter_id', 'asc')->orderBy('order')->get(),
+                'comments' => $wishlist->comments()->with('user')->get(),
             ]);
         }
 
         return view('wishlists.show', [
             'wishlist' => $wishlist,
             'wishes' => $wishlist->wishes()->orderBy('order')->get(),
+            'groups' => $wishlist->groups()->withCount('users')->get(),
+            'comments' => $wishlist->comments()->with('user')->get(),
         ]);
     }
 
@@ -65,7 +67,7 @@ class WishlistController extends Controller
     }
 
     public function destroy(Request $request, Wishlist $wishlist)
-    {   
+    {
         $request->validateWithBag('wishlistDeletion', [
             'wishlist_name' => ['required', 'string', 'max:255', 'same:original_name'],
         ]);

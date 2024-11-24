@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\Party;
+use App\Models\Group;
 use App\Models\User;
-use App\Models\Wishlist;
-use App\Providers\RouteServiceProvider;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,28 +16,18 @@ use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
 {
-    /**
-     * Display the registration view.
-     */
     public function create(Request $request): View
     {
         return view('auth.register', [
-            'wishlist' => $request->query('wishlist'),
-            'party' => $request->query('party'),
-            'adventure' => $request->query('adventure')
+            'group' => $request->query('group'),
         ]);
     }
 
-    /**
-     * Handle an incoming registration request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -49,43 +37,33 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        if ($request->query('adventure') && $request->query('adventure') == 'create_party') {
-            $p = new Party;
-            $p->name = __(':user Household Party', ['user' => Str::afterLast($user->name, ' ')]);
-            $p->user_id = $user->id;
-            $p->save();
-        }
-        elseif ($request->query('party')) {
-            $p = Party::where('invite_code', $request->query('party'))->firstOrFail();
-            $user->wishlists()->create([
-                'name' => __(':user’s Wishlist', ['user' => Str::before($user->name, ' ')]),
-                'party_id' => $p->id,
-            ]);
-        }
-        else {
-            $user->wishlists()->create([
-                'name' => __(':user’s Wishlist', ['user' => Str::before($user->name, ' ')]),
-            ]);
+        $wishlist = $user->wishlists()->create([
+            'name' => __(':user’s Wishlist', ['user' => Str::before($user->name, ' ')]),
+        ]);
+
+        if (session('wishlist')) {
+            foreach (session('wishlist')['wishes'] as $wish) {
+                $wishlist->wishes()->create([
+                    'name' => $wish['name'],
+                    'description' => $wish['description'],
+                    'url' => $wish['url'],
+                ]);
+            }
+            session()->remove('wishlist');
         }
 
         event(new Registered($user));
 
         Auth::login($user);
 
-        if ($request->query('adventure') && $request->query('adventure') == 'create_party') {
-            return to_route('parties.index', $p);
+        if ($code = $request->query('group')) {
+            if ($group = Group::findByInviteCode($code)) {
+                $group->join($user, $wishlist->id);
+
+                return to_route('groups.show', $group);
+            }
         }
 
-        $invitecode = $request->query('wishlist');
-        if ($wishlist = Wishlist::findByInviteCode($invitecode)){  
-            $wishlist->viewers()->syncWithoutDetaching($user);   
-            return to_route('wishlists.show', $wishlist);
-        }
-
-        if ($party = $request->query('party')) {
-            return to_route('parties.participants.create', $party);
-        }
-
-        return redirect(RouteServiceProvider::HOME);
+        return redirect()->intended(route('app', absolute: false));
     }
 }

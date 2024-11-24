@@ -6,12 +6,7 @@
     </div>
     <ul class="flex divide-x">
         <li>
-            <x-nav-link :href="route('parties.index')" :active="request()->routeIs('parties.index')">
-                {{ __('Parties') }}
-            </x-nav-link>
-        </li>
-        <li>
-            <x-nav-link :href="route('app')" :active="request()->routeIs('wishlists.index')">
+            <x-nav-link :href="route('wishlists.index')" :active="request()->routeIs('wishlists.index')">
                 {{ __('Wishlists') }}
             </x-nav-link>
         </li>

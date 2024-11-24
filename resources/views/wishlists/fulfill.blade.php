@@ -1,17 +1,10 @@
-<x-app-layout>
-<x-slot name="title">
-    {{ $wishlist->name }}
-</x-slot>
+<x-layout.app title="{{ $wishlist->name }}">
 <x-slot name="header">
-    <x-back href="{{ route('wishlists.index') }}">{{ __('Wishlists') }}</x-back>
     <h1 class="font-semibold text-xl text-gray-800 leading-tight">
         {{ $wishlist->name }}
-        @if ($wishlist->party)
-            (for {{ $wishlist->party->name }})
-        @endif
     </h1>
 </x-slot>
-<div class="max-w-7xl mx-auto px-4 space-y-6 sm:px-6 lg:px-8">
+<div class="max-w-5xl mx-auto px-4 space-y-6 sm:px-6 lg:px-8">
     <div class="bg-white divide-y shadow overflow-hidden rounded-lg">
         @if($wishes->isNotEmpty())
             <ul role="list" x-init id="wishlist_{{ $wishlist->id }}" x-merge="morph" class="bg-white">
@@ -81,19 +74,27 @@
                 @endforeach
             </ul>
         @else
-            <p class="px-4 py-3 text-center text-gray-600 sm:py-4">{{ __('Nothing has been added to this wishlist (yet).') }}
+            <p class="px-4 py-3 text-sm text-center text-gray-600 sm:py-4">{{ __('Start by adding your first wish to this wishlist.') }}
         @endif
     </div>
 
-    @if (!$wishlist->party)
-    <section class="pt-4 sm:pt-8 text-center">
-        <h2 class="sr-only text-lg font-medium text-gray-900">
-            {{ __('Leave :wishlist Wishlist', ['wishlist' => $wishlist->name]) }}
-        </h2>
-        <x-form x-target="viewers" method="delete" action="{{ route('wishlists.viewers.destroy', [$wishlist, Auth::user()]) }}" onsubmit="return confirm(`{{ __('Once you leave you will no longer be able to see :wishlist.', ['wishlist' => $wishlist->name]) }}`)">
-            <button class="underline text-gray-600 text-sm">{{ __('Leave this wishlist') }}</button>
-        </x-form>
-    </section>
-    @endif
+    <x-section>
+        <x-slot:title>
+            {{ __('Comments') }}
+        </x-slot:title>
+        <x-slot:description>
+            {{ __('Leave an anonymous note or ask a question about a wish.', ['user' => $wishlist->user->name]) }}
+        </x-slot:description>
+        <div class="p-4" x-init id="comments">
+            @if ($comments->isNotEmpty())
+                <ul role="list" x-init>
+                    @foreach($comments as $comment)
+                        <x-comment :comment="$comment->setRelation('commentable', $wishlist)" :anonymous="$comment->user->isNot($wishlist->user)" />
+                    @endforeach
+                </ul>
+            @endif
+            <x-comment-form action="{{ route('wishlists.comments.store', $wishlist) }}" :anonymous="true" x-target="comments" x-focus="comment" />
+        </div>
+    </x-section>
 </div>
-</x-app-layout>
+</x-layout.app>
