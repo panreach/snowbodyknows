@@ -2,37 +2,24 @@
 
 use App\Http\Controllers\AppController;
 use App\Http\Controllers\GrantedWishController;
-use App\Http\Controllers\PartyController;
-use App\Http\Controllers\PartyParticipantController;
+use App\Http\Controllers\GroupController;
+use App\Http\Controllers\GroupUserController;
+use App\Http\Controllers\Guest\GuestSortWishlistController;
+use App\Http\Controllers\Guest\GuestWishController;
+use App\Http\Controllers\Guest\GuestWishlistController;
+use App\Http\Controllers\JoinController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SortWishlistController;
 use App\Http\Controllers\WishController;
 use App\Http\Controllers\WishlistCommentController;
 use App\Http\Controllers\WishlistController;
-use App\Http\Controllers\WishlistViewerController;
-use App\Http\Controllers\Guest\GuestWishController;
-use App\Http\Controllers\Guest\GuestWishlistController;
-use App\Http\Controllers\Guest\GuestSortWishlistController;
 use App\Models\Wishlist;
-use App\Models\Party;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Str;
 
-Route::get('/', function () {
-    return view('welcome');
-})->name('welcome');
+Route::view('/', 'welcome')->name('welcome');
 
-Route::view('/affiliates', 'markdown', ['slot' => Str::markdown(file_get_contents(resource_path('markdown/affiliates.md')))]);
+Route::get('/groups/{group:invite_code}/join', JoinController::class)->name('join');
 
-Route::get('/choose-adventure', function () {
-    return view('choose-adventure');
-})->name('choose-adventure');
-
-Route::get('/parties/{party:invite_code}/join', [PartyParticipantController::class, 'create'])->name('parties.participants.create');
-Route::post('/parties/{party:invite_code}/join', [PartyParticipantController::class, 'store'])->name('parties.participants.store')->middleware('auth');
-
-Route::get('/wishlists/{wishlist:invite_code}/join', [WishlistViewerController::class, 'create'])->name('wishlists.viewers.create');
-Route::post('/wishlists/{wishlist:invite_code}/join', [WishlistViewerController::class, 'store'])->name('wishlists.viewers.store')->middleware('auth');
 Route::get('/guest/wishlists/', [GuestWishlistController::class, 'show'])->name('guests.wishlists.show');
 Route::get('/guest/wishlists/wish', [GuestWishController::class, 'create'])->name('guests.wishes.create');
 Route::post('/guest/wishlists/wish', [GuestWishController::class, 'store'])->name('guests.wishes.store');
@@ -43,17 +30,7 @@ Route::post('/guest/wishlists/sort', GuestSortWishlistController::class)->name('
 
 Route::middleware('auth')->prefix('/app')->group(function () {
     Route::get('/', AppController::class)->name('app');
-    
-    Route::get('/parties', [PartyController::class, 'index'])->name('parties.index');
-    Route::get('/parties/create', [PartyController::class, 'create'])->name('parties.create')->can('create', Party::class);
-    Route::get('/parties/{party}', [PartyController::class, 'show'])->name('parties.show')->can('view', 'party');
-    Route::post('/parties', [PartyController::class, 'store'])->name('parties.store')->can('create', Party::class);
-    Route::get('/parties/{party}', [PartyController::class, 'show'])->name('parties.show')->can('view', 'party');
-    Route::get('/parties/{party}/edit', [PartyController::class, 'edit'])->name('parties.edit')->can('update', 'party');
-    Route::patch('/parties/{party}', [PartyController::class, 'update'])->name('parties.update')->can('update', 'party');
-    Route::delete('/parties/{party}', [PartyController::class, 'destroy'])->name('parties.destroy')->can('delete', 'party');
-    Route::delete('/parties/{party}/users/{user}', [PartyParticipantController::class, 'destroy'])->name('parties.participants.destroy')->can('kick', ['party', 'user']);
-    
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -66,13 +43,23 @@ Route::middleware('auth')->prefix('/app')->group(function () {
     Route::patch('/wishlists/{wishlist}', [WishlistController::class, 'update'])->name('wishlists.update')->can('update', 'wishlist');
     Route::delete('/wishlists/{wishlist}', [WishlistController::class, 'destroy'])->name('wishlists.destroy')->can('delete', 'wishlist');
 
-    Route::delete('/wishlists/{wishlist}/users/{user}', [WishlistViewerController::class, 'destroy'])->name('wishlists.viewers.destroy')->can('kick', ['wishlist', 'user']);
-
     Route::post('/wishlists/{wishlist}/sort', SortWishlistController::class)->name('wishlists.sort')->can('update', 'wishlist');
 
     Route::post('/wishlists/{wishlist}/comments', [WishlistCommentController::class, 'store'])->name('wishlists.comments.store')->can('view', 'wishlist');
     Route::patch('/wishlists/{wishlist}/comments/{comment}', [WishlistCommentController::class, 'update'])->name('wishlists.comments.update')->can('update', 'comment');
     Route::delete('/wishlists/{wishlist}/comments/{comment}', [WishlistCommentController::class, 'destroy'])->name('wishlists.comments.destroy')->can('delete', 'comment');
+
+    Route::get('/wishlists/{wishlist}/share', [GroupController::class, 'create'])->name('groups.create')->can('update', 'wishlist');
+    Route::post('/wishlists/{wishlist}/share', [GroupController::class, 'store'])->name('groups.store')->can('update', 'wishlist');
+
+    Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
+    Route::get('/groups/{group}', [GroupController::class, 'show'])->name('groups.show')->can('view', 'group');
+    Route::get('/groups/{group}/edit', [GroupController::class, 'edit'])->name('groups.edit')->can('update', 'group');
+    Route::patch('/groups/{group}', [GroupController::class, 'update'])->name('groups.update')->can('update', 'group');
+
+    Route::get('/groups/{group}/users', [GroupUserController::class, 'create'])->name('groups.users.create');
+    Route::post('/groups/{group}/users', [GroupUserController::class, 'store'])->name('groups.users.store');
+    Route::delete('/groups/{group}/users/{user}', [GroupUserController::class, 'destroy'])->name('groups.users.destroy')->can('update', 'user');
 
     Route::get('/wishlists/{wishlist}/wish', [WishController::class, 'create'])->name('wishes.create')->can('update', 'wishlist');
     Route::post('/wishlists/{wishlist}/wish', [WishController::class, 'store'])->name('wishes.store')->can('update', 'wishlist');

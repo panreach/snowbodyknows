@@ -1,5 +1,5 @@
 <x-layout.base title="{{ __('A gift wishlist builder') }}">
-@include('layouts/snow')
+@include('layouts.snow')
 <div class="mx-auto mt-12 px-4 max-w-sm">
     <p class="text-center text-gray-600 text-lg">{{ __('Build a wishlist. Share it. Friends & family can purchase the things you want without you knowing.') }}</p>
 </div>
@@ -14,7 +14,7 @@
     </a>
 </div>
 <div class="mt-6 text-center w-full">
-    <x-button-primary href="{{ route('choose-adventure') }}">{{ __('Register') }}</x-button-primary>
+    <x-button-primary href="{{ route('register') }}">{{ __('Register') }}</x-button-primary>
     <x-button-secondary href="{{ route('login') }}">{{ __('Login') }}</x-button-secondary>
 </div>
 </x-layout>
